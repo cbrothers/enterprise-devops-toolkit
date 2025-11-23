@@ -27,6 +27,41 @@ try {
         git checkout main
     }
 
+    # ---------------------------------------------------------
+    # Pre-Flight Safety Checks
+    # ---------------------------------------------------------
+    
+    Write-ColorOutput "`n🔍 Running pre-flight checks..." "Cyan"
+    
+    # Check 1: Uncommitted changes
+    $status = git status --porcelain
+    if ($status) {
+        Write-Error "Working directory has uncommitted changes. Please commit or stash them before deploying."
+    }
+    Write-ColorOutput "  ✅ Working directory clean" "Green"
+    
+    # Check 2: Branch sync status
+    git fetch origin --quiet
+    $localCommit = git rev-parse main
+    $remoteCommit = git rev-parse origin/main
+    
+    if ($localCommit -ne $remoteCommit) {
+        Write-ColorOutput "  ⚠️  Local main is not in sync with origin/main" "Yellow"
+        $ahead = git rev-list --count origin/main..main
+        $behind = git rev-list --count main..origin/main
+        Write-Host "     Ahead: $ahead commits | Behind: $behind commits" -ForegroundColor Gray
+        
+        $continue = Read-Host "     Continue deployment anyway? (y/N)"
+        if ($continue -ne 'y') { 
+            Write-ColorOutput "`n❌ Deployment cancelled by user" "Red"
+            exit 0 
+        }
+    }
+    else {
+        Write-ColorOutput "  ✅ Branch in sync with remote" "Green"
+    }
+
+
     if ($Target -eq "Stage") {
         if ([string]::IsNullOrWhiteSpace($Message)) {
             Write-Error "Message is required for Stage deployment."

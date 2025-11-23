@@ -13,8 +13,40 @@
 
 param(
     [Parameter(Mandatory = $false)]
-    [string]$SourcePath = "c:\Users\craig.brothers\Desktop\AI Code Ideas\AI Bands\The Silent Whistle"
+    [string]$SourcePath
 )
+
+# Auto-detect SourcePath if not provided
+if ([string]::IsNullOrEmpty($SourcePath)) {
+    $potentialSourcePaths = @(
+        $PSScriptRoot,
+        (Join-Path $PSScriptRoot ".." | Resolve-Path -ErrorAction SilentlyContinue) # Check parent directory
+        # Add other common installation paths if applicable
+    )
+
+    $foundSource = $false
+    foreach ($path in $potentialSourcePaths) {
+        if ($path -and (Test-Path (Join-Path $path ".agent\scripts\Apply-SmartPatch.ps1"))) {
+            $SourcePath = $path
+            $foundSource = $true
+            Write-Host "✅ Auto-detected SourcePath: $SourcePath" -ForegroundColor Green
+            break
+        }
+    }
+
+    if (-not $foundSource) {
+        Write-Error "Could not auto-detect the AI Workflow source path. Please provide it using -SourcePath parameter."
+        exit 1
+    }
+}
+else {
+    # Validate provided SourcePath
+    if (-not (Test-Path (Join-Path $SourcePath ".agent\scripts\Apply-SmartPatch.ps1"))) {
+        Write-Error "The provided SourcePath '$SourcePath' does not appear to be a valid AI Workflow source directory (missing .agent/scripts/Apply-SmartPatch.ps1)."
+        exit 1
+    }
+    Write-Host "✅ Using provided SourcePath: $SourcePath" -ForegroundColor Green
+}
 
 $ErrorActionPreference = "Stop"
 

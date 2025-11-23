@@ -41,6 +41,64 @@ if ($patchData -isnot [System.Array]) {
 }
 
 # ---------------------------------------------------------
+# 1.5. Validate All Patches Before Applying
+# ---------------------------------------------------------
+
+Write-Host "`nValidating patches..." -ForegroundColor Cyan
+
+foreach ($patch in $patchData) {
+    if (-not $patch.file) { 
+        Write-Error "Patch missing 'file' property" 
+    }
+    if (-not $patch.PSObject.Properties['search']) { 
+        Write-Error "Patch missing 'search' property for file: $($patch.file)" 
+    }
+    if (-not $patch.PSObject.Properties['replace']) { 
+        Write-Error "Patch missing 'replace' property for file: $($patch.file)" 
+    }
+    if (-not (Test-Path $patch.file)) { 
+        Write-Error "File not found: $($patch.file)" 
+    }
+}
+
+Write-Host "✅ All patches validated" -ForegroundColor Green
+
+# ---------------------------------------------------------
+# 1.6. Handle Git Branching (Once, Before All Patches)
+# ---------------------------------------------------------
+
+if ($pathIsGitTracked -and -not [string]::IsNullOrWhiteSpace($BranchName)) {
+    $currentBranch = git branch --show-current
+    if ($currentBranch -ne $BranchName) {
+        Write-Host "`nSwitching to branch: $BranchName" -ForegroundColor Cyan
+        git checkout $BranchName 2>$null
+        if ($LASTEXITCODE -ne 0) { 
+            git checkout -b $BranchName 
+            Write-Host "✅ Created new branch: $BranchName" -ForegroundColor Green
+        }
+        else {
+            Write-Host "✅ Switched to existing branch: $BranchName" -ForegroundColor Green
+        }
+    }
+}
+
+# ---------------------------------------------------------
+# 1.7. Create Rollback Point
+# ---------------------------------------------------------
+
+$stashCreated = $false
+if ($pathIsGitTracked) {
+    # Check if there are any changes to stash
+    $status = git status --porcelain
+    if ($status) {
+        $stashName = "pre-patch-backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+        git stash push -m $stashName
+        $stashCreated = $true
+        Write-Host "✅ Created rollback point: $stashName" -ForegroundColor Green
+    }
+}
+
+# ---------------------------------------------------------
 # 2. Process Patches
 # ---------------------------------------------------------
 
@@ -55,20 +113,18 @@ foreach ($patch in $patchData) {
         Write-Error "Target file not found: $targetPath" 
     }
 
-    # BINARY GUARD
-    $binaryExtensions = @(".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".pdf", ".exe", ".dll", ".bin", ".zip", ".tar", ".gz", ".7z")
+    # BINARY GUARD (Enhanced)
+    $binaryExtensions = @(
+        ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".svg", ".webp",
+        ".pdf", ".exe", ".dll", ".bin", ".so", ".dylib",
+        ".zip", ".tar", ".gz", ".7z", ".rar",
+        ".mp4", ".avi", ".mov", ".webm", ".mkv",
+        ".mp3", ".wav", ".flac", ".ogg",
+        ".woff", ".woff2", ".ttf", ".eot", ".otf"
+    )
     $extension = [System.IO.Path]::GetExtension($targetPath).ToLower()
     if ($binaryExtensions -contains $extension) {
         Write-Error "ABORTED :: Target '$targetPath' appears to be a binary file."
-    }
-
-    # GIT Branching (Only once per run ideally, but safe to repeat)
-    if ($pathIsGitTracked -and -not [string]::IsNullOrWhiteSpace($BranchName)) {
-        $currentBranch = git branch --show-current
-        if ($currentBranch -ne $BranchName) {
-            git checkout $BranchName 2>$null
-            if ($LASTEXITCODE -ne 0) { git checkout -b $BranchName }
-        }
     }
 
     # Apply Patch Logic
@@ -91,8 +147,13 @@ foreach ($patch in $patchData) {
         $flexiblePattern = $escapedTokens -join '\s+'
         $regex = [regex]::new($flexiblePattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
         
-        if ($regex.Matches($normalizedContent).Count -eq 0) {
+        $matchCount = $regex.Matches($normalizedContent).Count
+        
+        if ($matchCount -eq 0) {
             Write-Error "FAILURE :: Content not found in $targetPath"
+        }
+        elseif ($matchCount -gt 1) {
+            Write-Error "FAILURE :: Ambiguous match - found $matchCount occurrences in $targetPath. Please make your search text more specific."
         }
         
         Write-Host "MATCH :: Flexible whitespace match found." -ForegroundColor Green
@@ -120,4 +181,13 @@ foreach ($patch in $patchData) {
             Write-Warning "NO CHANGE :: Content matched but result identical."
         }
     }
+}
+
+# ---------------------------------------------------------
+# 3. Cleanup Rollback Point (Success)
+# ---------------------------------------------------------
+
+if ($stashCreated) {
+    git stash drop
+    Write-Host "`n✅ Rollback point removed (all patches applied successfully)" -ForegroundColor Green
 }
