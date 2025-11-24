@@ -1,5 +1,53 @@
 # CHANGELOG
 
+## [Cloudflare Pages Support] - 2025-11-23
+
+### 🚀 New Features
+
+#### Cloudflare Pages Deployment
+- **New Workflow**: `workflows/cloudflare-deployment.md`
+  - Complete guide for Cloudflare Pages deployment
+  - Three-branch strategy (main → stage → production)
+  - Git integration and Direct Upload methods
+  - Comprehensive troubleshooting guide
+  - Security and performance best practices
+
+#### Deploy-CloudflarePages.ps1
+- **Automated deployment script** for Cloudflare Pages
+- Multi-environment support (stage, production)
+- Build verification before deployment
+- Git status checking and dirty working directory detection
+- Dry-run mode for testing
+- Project name auto-detection from package.json
+- Confirmation prompts with force override option
+
+#### Fix-GitSubmodules.ps1
+- **Automated Git submodule repair tool**
+- Detects accidentally added submodules
+- Converts submodules to regular directories
+- Batch processing with auto-fix mode
+- Dry-run capability for safe testing
+
+#### Enhanced Inject-Version.ps1
+- **Multi-build-tool support**: Vite, webpack, HTML
+- Auto-detection of build tool
+- Customizable version format with placeholders
+- Git tag support
+- Configurable output variable name
+
+### 📝 Documentation
+- Comprehensive Cloudflare Pages deployment guide
+- Common issue resolution (submodules, DNS, caching)
+- Version injection examples for different frameworks
+- Security headers and performance optimization guides
+
+### 🔧 Technical Improvements
+- Better error handling in deployment scripts
+- Consistent color-coded output across all new scripts
+- Enhanced user feedback and progress indicators
+
+---
+
 ## [Enhanced] - 2025-11-23
 
 ### 🚀 Critical Improvements
