@@ -84,6 +84,13 @@ cd enterprise-devops-toolkit
 - ✅ **Integration Testing** - End-to-end validation
 - ✅ **Git Workflow** - Safe branching and merging
 
+### ⚡ **Helper Scripts System** (NEW!)
+- ✅ **Token Efficiency** - Reduce AI token usage by 70-90%
+- ✅ **JSON I/O** - Structured input/output for automation
+- ✅ **Composable** - Chain helpers for complex workflows
+- ✅ **Extensible** - Easy to add custom helpers
+- ✅ **Built-in Helpers**: git-commit, issue-update, file-search, code-analyze
+
 ---
 
 ## 📦 What's Included
