@@ -25,16 +25,6 @@ A battle-tested collection of **16 professional workflows** and **18 automation 
 
 ## ⚡ Quick Start
 
-### Installation
-
-```powershell
-# Clone the repository
-git clone https://github.com/yourusername/enterprise-devops-toolkit.git
-cd enterprise-devops-toolkit
-
-# Bootstrap your project
-.\Bootstrap-AIWorkflow.ps1
-
 # Add rules to your IDE's "Project Rules" or "Custom Instructions"
 # See: .agent/rules.md
 ```
